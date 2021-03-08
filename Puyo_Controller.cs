@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class Puyo_Controller : MonoBehaviour
 {
-
     private Puyo_pair Play_puyo;
     private Board Play_board;
+    private Checker Play_checker;
+    
     private string status = "none";
 
     float hkey;
@@ -16,9 +17,11 @@ public class Puyo_Controller : MonoBehaviour
 
     private Puyo_pair[,] Field_puyos = new Puyo_pair[Configs.right+2,Configs.top+1];
 
+
     void Start(){
         Play_board = new Board();
-        Play_board.init_Field();
+        Play_checker = new Checker();
+        
         status = "create";
     }
 
@@ -27,11 +30,12 @@ public class Puyo_Controller : MonoBehaviour
         vkey = Input.GetAxis("Vertical");
         zkey = Input.GetKeyDown(KeyCode.Z);
         xkey = Input.GetKeyDown(KeyCode.X);
+
         //Debug.Log(status);
         switch (status){
 
                 case "create":
-                    Play_puyo = new Puyo_pair();
+                    Play_puyo = new Puyo_pair("1");
                     status = "moving";
                     break;
 
@@ -42,7 +46,10 @@ public class Puyo_Controller : MonoBehaviour
                     Play_board.colorize_Borad((int)pos.x,(int)pos.y);
                     break;
         }
+
+        Play_checker.update_text(Play_puyo,hkey,vkey,zkey,xkey);
     }
+
 
 
 }

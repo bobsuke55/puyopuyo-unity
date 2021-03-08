@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 public class Board : MonoBehaviour
 {
@@ -11,6 +12,7 @@ public class Board : MonoBehaviour
     private GameObject p_Board;
     //boardの子
     private GameObject[,] c_Boards = new GameObject[Configs.right+2,Configs.top+1];
+    private Renderer[,] c_Boards_r = new Renderer[Configs.right+2,Configs.top+1];
     // Start is called before the first frame update
     // Update is called once per frame
 
@@ -23,12 +25,13 @@ public class Board : MonoBehaviour
         //board の親object
         this.p_Board = new GameObject("Boards");  
         
-        var prefab = (GameObject)Resources.Load ("board/Quad") as GameObject;
+        var prefab = (GameObject)Resources.Load ("board/Board") as GameObject;
         for (int x=0;x<Configs.right+2;++x){                
             for (int y=0;y<Configs.top+1;++y){
                 this.Field_bool[x,y] = true;
                 this.c_Boards[x,y] = (GameObject)Instantiate(prefab, new Vector3(x,y,+0.01f), Quaternion.Euler(0, 0, 0));
                 this.c_Boards[x,y].transform.parent = p_Board.transform;
+                this.c_Boards_r[x,y] = c_Boards[x,y].transform.Find("Quad").gameObject.GetComponent<Renderer>();
             }
         }
 
@@ -45,16 +48,19 @@ public class Board : MonoBehaviour
         for (int x=0;x<Configs.right+2;++x){                
             for (int y=0;y<Configs.top+1;++y){
                 if(this.Field_bool[x,y]){
-                    this.c_Boards[x,y].GetComponent<Renderer>().material.SetColor("_Color",Color.gray);
+                    this.c_Boards_r[x,y].material.SetColor("_Color",Color.gray);
                 }
                 else{
-                    this.c_Boards[x,y].GetComponent<Renderer>().material.SetColor("_Color",Color.cyan);
+                    this.c_Boards_r[x,y].material.SetColor("_Color",Color.cyan);
                 }
             }
         }
+
+        PrefabUtility.SaveAsPrefabAsset(p_Board,"Assets/Prefabs/hoge.prefab");
+
     }
 
     public void colorize_Borad(int i,int j){ 
-        this.c_Boards[i,j].GetComponent<Renderer>().material.SetColor("_Color",Color.red);
+        this.c_Boards[i,j].GetComponentInChildren<Renderer>().material.SetColor("_Color",Color.red);
     }
 }

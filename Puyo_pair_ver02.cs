@@ -145,8 +145,6 @@ public class Puyo_pair_ver02 : MonoBehaviour
         else{ // 反時計回転 main_puyoの右側がFalseかつ angleが90のときに
             if (z){ // 反時計回転
             //main puyoの右側がfalseかつangleが90のとき、mainpuyoを左側に動かす。
-                if(angle==90 & this.)
-            
                 this.rtarget = this.angle + 90;
                 this.is_rotating = true;
                 Debug.Log(this.rtarget);
