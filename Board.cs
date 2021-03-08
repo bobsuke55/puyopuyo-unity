@@ -6,7 +6,6 @@ using UnityEditor;
 public class Board : MonoBehaviour
 {
 
-
     public bool[,] Field_bool = new bool[Configs.board_width,Configs.board_height];
 
     //boardの親
