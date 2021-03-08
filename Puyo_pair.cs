@@ -11,28 +11,34 @@ public class Puyo_pair : MonoBehaviour
     public Renderer mainpuyo_r;
     public Renderer subpuyo_r;
 
-    private Vector3Int init_pos = new Vector3Int(3,9,0);
+    private Vector3 init_pos = new Vector3(6*Configs.scale,11*Configs.scale,0);
     
     //main puyoの移動差分
     public Vector3 delta = new Vector3(0,0,0);
-    public Vector3 sdelta = new Vector3(0,0,0);
+    public Vector3 slide_delta = new Vector3(0,0,0);
     //main puyoと sub puyoの位置差分
-    private Vector3 sub_delta = new Vector3(0,1,0);
+    private Vector3 sub_delta = new Vector3(0,2,0);
     public float angle = 90;
 
-    public float rtarget;
+    public float target_angle;
     public float xtarget = 0f;
 
-    private float xtimeElapsed;
-    private float ytimeElapsed;
+    public float xtimeElapsed;
+    public float ytimeElapsed;
+    public float fixtimeElapsed;
 
     private int xmove_count = 0;
     private int ymove_count = 0;
     private int smove_count = 0;
 
     //mainpuyoとsubpuyoの位置(int)
-    private Vector3Int mainpos;
-    private Vector3Int subpos = new Vector3Int(0,0,0);
+    public Vector3Int mainpos = new Vector3Int(0,0,0);
+    public Vector3Int subpos  = new Vector3Int(0,0,0);
+
+    //flag管理のためのposition.
+    private Vector3Int next_mainpos;
+    private Vector3Int next_subpos;
+    private Vector3 next_subdelta;
 
     public bool is_ymoving;
     public bool is_xmoving;
@@ -42,7 +48,7 @@ public class Puyo_pair : MonoBehaviour
     public bool can_xrightmoving;
     public bool can_xleftmoving;
     public bool can_rotating;
-
+    public string state;
 
     /*
     rotate_flag //回転。
@@ -79,53 +85,96 @@ public class Puyo_pair : MonoBehaviour
 
     public void move(bool[,] Field_bool,float vkey, float hkey, bool zkey, bool xkey){  
         
-        this.check_canmoving(Field_bool,hkey,zkey,xkey); // 移動可否の確認 & deltaを消す。
+        this.check_canmoving(Field_bool,hkey,zkey,xkey); 
 
-        //is_ ingは動作中を表す。
+        this.ytimeElapsed += Time.deltaTime;
+        this.xtimeElapsed += Time.deltaTime;
+
         if (this.can_ymoving){
             this.movey(vkey); 
         }
 
-        if(!this.can_xleftmoving & hkey < 0){
-            hkey = 0;
+        this.check_canmoving(Field_bool,hkey,zkey,xkey);
+
+        if( (this.can_xleftmoving) & (hkey < 0) ){  //左移動
+            this.movex(hkey);
         }
-        else if(!this.can_xrightmoving & hkey > 0){
-            hkey = 0;
+        else if( (this.can_xrightmoving) & (hkey > 0) ){　//右移動
+            this.movex(hkey);
         }
-        else if(this.is_rotating){
-            hkey = 0;
+        else if(this.is_xmoving){ //横移動処理中..
+            this.movex(hkey); 
         }
-        this.movex(hkey);
+
+        this.check_canmoving(Field_bool,hkey,zkey,xkey);
 
         this.rotating_slide(zkey,xkey);
-        }
+    }
 
 
     public void check_canmoving(bool[,] Field_bool,float hkey,bool zkey,bool xkey){ // 
-        this.mainpos = this.mainpos_round();
-        this.subpos  = this.subpos_round();
+        this.mainpos   = Vector3Int.FloorToInt(this.puyo.transform.position);
+        this.subpos    = Vector3Int.FloorToInt(this.puyo.transform.position + this.sub_delta );
         var angle_plus = this.plus_mod(this.angle,360f);
-        Debug.Log(angle_plus);
-        this.can_ymoving      = Field_bool[this.mainpos.x,this.mainpos.y-1] & Field_bool[this.subpos.x,this.subpos.y-1];
-        this.can_xleftmoving  = Field_bool[this.mainpos.x-1,this.mainpos.y] & Field_bool[this.subpos.x-1,this.subpos.y];
-        this.can_xrightmoving = Field_bool[this.mainpos.x+1,this.mainpos.y] & Field_bool[this.subpos.x+1,this.subpos.y];
 
-        this.rslide_flag   = ( (zkey & angle_plus == 90)  | (xkey & angle_plus == 270) ) & !Field_bool[this.mainpos.x-1,this.mainpos.y];
-        this.lslide_flag   = ( (xkey & angle_plus == 90)  | (zkey & angle_plus == 270) ) & !Field_bool[this.mainpos.x+1,this.mainpos.y];
-        this.uslide_flag   = ( (zkey & angle_plus == 180) | (xkey & angle_plus == 0) )   & !Field_bool[this.mainpos.x,this.mainpos.y-1];
-        this.unrotate_flag = ( !Field_bool[this.mainpos.x+1,this.mainpos.y] & !Field_bool[this.mainpos.x-1,this.mainpos.y] );
-        }
+        this.can_ymoving      = Field_bool[this.mainpos.x,mainpos.y-1] & Field_bool[this.mainpos.x+1,mainpos.y-1]
+                               &Field_bool[this.subpos.x,subpos.y-1]   & Field_bool[this.subpos.x+1,subpos.y-1];
+
+        this.can_xleftmoving  = Field_bool[this.mainpos.x-1,this.mainpos.y] & Field_bool[this.mainpos.x-1,this.mainpos.y+1]
+                               &Field_bool[Mathf.Clamp(this.subpos.x-1,0,Configs.board_width-1),this.subpos.y] 
+                               &Field_bool[Mathf.Clamp(this.subpos.x-1,0,Configs.board_width-1),this.subpos.y+1];
+
+        this.can_xrightmoving = Field_bool[this.mainpos.x+2,this.mainpos.y] & Field_bool[this.mainpos.x+2,this.mainpos.y+1]
+                               &Field_bool[Mathf.Clamp(this.subpos.x+2,0,Configs.board_width-1),this.subpos.y]
+                               &Field_bool[Mathf.Clamp(this.subpos.x+2,0,Configs.board_width-1),this.subpos.y+1];
     
+        this.rslide_flag   = ( (zkey & angle_plus == 90)  | (xkey & angle_plus == 270) ) & //右側に回転ぷよをおさめるスペースがあるか?
+                             (!Field_bool[this.mainpos.x-1,this.mainpos.y]   | !Field_bool[this.mainpos.x-2,this.mainpos.y]
+                            | !Field_bool[this.mainpos.x-1,this.mainpos.y+1] | !Field_bool[this.mainpos.x-2,this.mainpos.y+1]);
+
+
+        this.lslide_flag   = ( (xkey & angle_plus == 90)  | (zkey & angle_plus == 270) ) & //左側に回転ぷよをおさめるスペースがあるか?
+                             (!Field_bool[this.mainpos.x+2,this.mainpos.y]   | !Field_bool[this.mainpos.x+3,this.mainpos.y]
+                            | !Field_bool[this.mainpos.x+2,this.mainpos.y+1] | !Field_bool[this.mainpos.x+3,this.mainpos.y+1]);
+
+
+        this.uslide_flag   = ( (zkey & angle_plus == 180) | (xkey & angle_plus == 0) ) & //下側に回転ぷよをおさめるスペースがあるか?
+                             ( !Field_bool[this.mainpos.x,  this.mainpos.y-1] | !Field_bool[this.mainpos.x+1,  this.mainpos.y-1]
+                             | !Field_bool[this.mainpos.x,  this.mainpos.y-2] | !Field_bool[this.mainpos.x+1,  this.mainpos.y-2]);
+            
+
+        //はさまってる。
+        //this.unrotate_flag = ( !Field_bool[this.mainpos.x+1,this.mainpos.y] & !Field_bool[this.mainpos.x-1,this.mainpos.y] );
+        if (this.is_rotating){
+            Debug.Log("nextmain" + this.next_mainpos);
+            Debug.Log("nextsub" + this.next_subpos);
+
+            this.can_ymoving  = Field_bool[this.next_mainpos.x,next_mainpos.y-1] & Field_bool[this.next_mainpos.x+1,next_mainpos.y-1]
+                               &Field_bool[this.next_subpos.x,next_subpos.y-1] 
+                               &Field_bool[this.next_subpos.x+1,next_subpos.y-1];
+
+            this.can_xleftmoving = Field_bool[this.next_mainpos.x-1,this.next_mainpos.y] & Field_bool[this.next_mainpos.x-1,this.next_mainpos.y+1]
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x-1,0,Configs.board_width-1),this.next_subpos.y]
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x-1,0,Configs.board_width-1),this.next_subpos.y+1];
+
+            this.can_xrightmoving = Field_bool[this.next_mainpos.x+2,this.next_mainpos.y]&Field_bool[this.next_mainpos.x+2,this.next_mainpos.y+1]
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x+2,0,Configs.board_width-1),this.next_subpos.y]
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x+2,0,Configs.board_width-1),this.next_subpos.y+1];
+        }
+    }
+
+
     //縦移動
     public void movey(float vkey){
+        float time;
         if (vkey < 0){
-            this.ytimeElapsed += Time.deltaTime * Configs.yspeed;
+            time = Configs.ytime / Configs.yspeed;
         }
         else{
-            this.ytimeElapsed += Time.deltaTime;
+            time = Configs.ytime;
         }
 
-        if (this.ytimeElapsed >= Configs.ytime){
+        if (this.ytimeElapsed >= time){
             this.ytimeElapsed = 0f;
             this.delta.y = -1.0f * Configs.ymove;
             this.puyo.transform.Translate(0,this.delta.y,0);
@@ -143,15 +192,10 @@ public class Puyo_pair : MonoBehaviour
             }
         }
         else{
-            if (hkey != 0 & (this.xtimeElapsed > Configs.xtime)){ //左移動 or 右移動
+            if (this.xtimeElapsed > Configs.xtime){ //左移動 or 右移動
                 this.xmove_count = 0;
                 this.delta.x = Mathf.Sign(hkey) * Configs.xmove;
                 this.is_xmoving = true;
-            }
-            else{
-                this.delta.x = 0;
-                this.is_xmoving = false;
-                this.xtimeElapsed += Time.deltaTime;
             }
         }
         this.puyo.transform.Translate(this.delta.x,0,0);
@@ -160,14 +204,16 @@ public class Puyo_pair : MonoBehaviour
     public void rotating_slide(bool z,bool x){
         if (this.is_rotating){
             this.smove_count += 1;
-            this.angle = Mathf.MoveTowards(this.angle,this.rtarget,Configs.rspeed*Time.deltaTime);
-            this.sub_delta.x = Mathf.Round(Mathf.Cos(Mathf.Deg2Rad*this.angle)*100)/100;
-            this.sub_delta.y = Mathf.Round(Mathf.Sin(Mathf.Deg2Rad*this.angle)*100)/100;
+
+            this.angle = Mathf.MoveTowards(this.angle,this.target_angle,Configs.rspeed*Time.deltaTime);
+            this.sub_delta.x = 2*Mathf.Round(Mathf.Cos(Mathf.Deg2Rad*this.angle)*100)/100;
+            this.sub_delta.y = 2*Mathf.Round(Mathf.Sin(Mathf.Deg2Rad*this.angle)*100)/100;
+
             if( this.smove_count>=Configs.smove_count ){
-                this.sdelta = new Vector3(0,0,0);
-                if(this.angle == this.rtarget){
-                    is_rotating = false;
-                    this.sdelta = new Vector3(0,0,0);
+                this.slide_delta = new Vector3(0,0,0);
+
+                if(this.angle == this.target_angle){
+                    this.is_rotating = false;
                     this.smove_count = 0;
                 }
             }
@@ -175,91 +221,44 @@ public class Puyo_pair : MonoBehaviour
         else{
             //zとxに応じて次の回転角を決める。
             if (z){
-                this.rtarget = this.angle + 90;
+                this.target_angle = this.angle + 90;
                 this.is_rotating = true;
                 }
             else if(x){ //時計回転
-                this.rtarget = this.angle - 90;
+                this.target_angle = this.angle - 90;
                 this.is_rotating = true;
                 }
             else{
                 this.is_rotating = false;
             }
+
+            this.next_subdelta.x = 2*Mathf.Round(Mathf.Cos(Mathf.Deg2Rad*this.target_angle)*100)/100;
+            this.next_subdelta.y = 2*Mathf.Round(Mathf.Sin(Mathf.Deg2Rad*this.target_angle)*100)/100;
 
             if (this.rslide_flag){ //右にスライド
-                this.sdelta.x = 1.0f * Configs.xmove;
-                Debug.Log("aaa");
+                this.slide_delta.x = 1.0f * Configs.xmove;
             }
             else if(this.lslide_flag){
-                this.sdelta.x = -1.0f * Configs.xmove;
+                this.slide_delta.x = -1.0f * Configs.xmove;
             }
             else if(this.uslide_flag){
-                this.sdelta.y = 1.0f * Configs.ymove;
+                this.slide_delta.y = 1.0f * Configs.ymove;
+                this.ytimeElapsed = 0;
             }
             else if(this.unrotate_flag){
-                this.sdelta.y = 1.0f * Configs.ymove;
+                this.slide_delta.y = -1.0f * Configs.ymove;
             }
-            else{
-                Debug.Log("fuck");
-            }
+            this.next_mainpos  = Vector3Int.FloorToInt( this.puyo.transform.position + this.slide_delta );
+            this.next_subpos   = Vector3Int.FloorToInt( this.puyo.transform.position + this.slide_delta + this.next_subdelta);
         }
-        this.puyo.transform.Translate( sdelta.x,sdelta.y,0 );
+        this.puyo.transform.Translate( slide_delta.x,slide_delta.y,0 );
         this.subpuyo.transform.position  = this.mainpuyo.transform.position + this.sub_delta;
     }
 
-
-    //回転 & 回し & ずらし
-    public void rotating(bool z,bool x){
-        if (this.is_rotating){
-            this.angle = Mathf.MoveTowards(this.angle,this.rtarget,Configs.rspeed*Time.deltaTime);
-            this.sub_delta.x = Mathf.Round(Mathf.Cos(Mathf.Deg2Rad*this.angle)*100)/100;
-            this.sub_delta.y = Mathf.Round(Mathf.Sin(Mathf.Deg2Rad*this.angle)*100)/100; 
-    
-            if(this.angle == this.rtarget){
-                is_rotating = false;
-            }
-        }
-        else{ 
-            if (z){        
-                this.rtarget = this.angle + 90;
-                this.is_rotating = true;
-                }
-            else if(x){ //時計回転
-                this.rtarget = this.angle - 90;
-                this.is_rotating = true;
-                }
-            else{
-                this.is_rotating = false;
-            }
-        }
-        this.subpuyo.transform.position  = this.mainpuyo.transform.position + this.sub_delta;
-    }
-
-    //今のmainぷよの位置の四捨五入した値を返す。 (Mathで実装することで、銀行丸めを回避している。)
-    private Vector3Int mainpos_round(){
-        Vector3Int roundpos = new Vector3Int(0,0,0);
-        var pos = this.puyo.transform.position;
-
-        roundpos.x = (int)Math.Round( pos.x,MidpointRounding.AwayFromZero );
-        roundpos.y = (int)Math.Round( pos.y,MidpointRounding.AwayFromZero );
-        roundpos.z = (int)Math.Round( pos.z,MidpointRounding.AwayFromZero );
-
-        return roundpos;
-    }
-    //今のsubぷよの位置の四捨五入した値を返す。
-    private Vector3Int subpos_round(){
-        Vector3Int roundpos = new Vector3Int(0,0,0);
-        var subpos = this.puyo.transform.position + this.sub_delta;
-
-        roundpos.x = (int)Math.Round( subpos.x,MidpointRounding.AwayFromZero );
-        roundpos.y = (int)Math.Round( subpos.y,MidpointRounding.AwayFromZero );
-        roundpos.z = (int)Math.Round( subpos.z,MidpointRounding.AwayFromZero );
-
-        return roundpos;
-    }
 
     private float plus_mod(float a,float b){
         return a- Mathf.Floor(a/b)*b;
     }
+
 
 }

@@ -6,13 +6,14 @@ using UnityEditor;
 public class Board : MonoBehaviour
 {
 
-    public bool[,] Field_bool = new bool[Configs.right+2,Configs.top+1];
+
+    public bool[,] Field_bool = new bool[Configs.board_width,Configs.board_height];
 
     //boardの親
     private GameObject p_Board;
     //boardの子
-    private GameObject[,] c_Boards = new GameObject[Configs.right+2,Configs.top+1];
-    private Renderer[,] c_Boards_r = new Renderer[Configs.right+2,Configs.top+1];
+    private GameObject[,] c_Boards = new GameObject[Configs.board_width,Configs.board_height];
+    private Renderer[,]   c_Boards_r = new Renderer[Configs.board_width,Configs.board_height];
     // Start is called before the first frame update
     // Update is called once per frame
 
@@ -23,11 +24,11 @@ public class Board : MonoBehaviour
 
     public void init_Field(){ 
         //board の親object
-        this.p_Board = new GameObject("Boards");  
+        this.p_Board = new GameObject("Boards");
         
         var prefab = (GameObject)Resources.Load ("board/Board") as GameObject;
-        for (int x=0;x<Configs.right+2;++x){                
-            for (int y=0;y<Configs.top+1;++y){
+        for (int x=0;x<Configs.board_width;++x){                
+            for (int y=0;y<Configs.board_height;++y){
                 this.Field_bool[x,y] = true;
                 this.c_Boards[x,y] = (GameObject)Instantiate(prefab, new Vector3(x,y,+0.01f), Quaternion.Euler(0, 0, 0));
                 this.c_Boards[x,y].transform.parent = p_Board.transform;
@@ -36,17 +37,21 @@ public class Board : MonoBehaviour
         }
 
         //
-        for (int x=0;x<Configs.right+2;++x){
+        for (int x=0;x<Configs.board_width;++x){
             this.Field_bool[x,0] = false; //下端
+            this.Field_bool[x,1] = false; //下端
             }
         
-        for (int y=0;y<Configs.top+1;++y){
-            this.Field_bool[0,y] = false; //
-            this.Field_bool[Configs.right+1,y] = false; //
+        for (int y=0;y<Configs.board_height;++y){
+            this.Field_bool[0,y] = false; //左端
+            this.Field_bool[1,y] = false; //
+
+            this.Field_bool[Configs.board_width-2,y] = false; //右端
+            this.Field_bool[Configs.board_width-1,y] = false; //
             }
 
-        for (int x=0;x<Configs.right+2;++x){                
-            for (int y=0;y<Configs.top+1;++y){
+        for (int x=0;x<Configs.board_width;++x){
+            for (int y=0;y<Configs.board_height;++y){
                 if(this.Field_bool[x,y]){
                     this.c_Boards_r[x,y].material.SetColor("_Color",Color.gray);
                 }
@@ -56,7 +61,7 @@ public class Board : MonoBehaviour
             }
         }
 
-        PrefabUtility.SaveAsPrefabAsset(p_Board,"Assets/Prefabs/hoge.prefab");
+        //PrefabUtility.SaveAsPrefabAsset(p_Board,"Assets/Prefabs/hoge.prefab");
 
     }
 
