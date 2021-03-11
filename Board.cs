@@ -7,6 +7,7 @@ public class Board : MonoBehaviour
 {
 
     public bool[,] Field_bool = new bool[Configs.board_width,Configs.board_height];
+    public GameObject[,] Field_puyo = new GameObject[Configs.width,Configs.height];
 
     //boardの親
     private GameObject p_Board;
@@ -47,8 +48,50 @@ public class Board : MonoBehaviour
 
             this.Field_bool[Configs.board_width-2,y] = false; //右端
             this.Field_bool[Configs.board_width-1,y] = false; //
-            }
+        }
 
+        this.colorize_false();
+
+        //PrefabUtility.SaveAsPrefabAsset(p_Board,"Assets/Prefabs/hoge.prefab");
+
+    }
+
+    public void colorize_Borad(int i,int j){ 
+        this.c_Boards[i,j].GetComponentInChildren<Renderer>().material.SetColor("_Color",Color.red);
+    }
+
+    //Puyo_listの位置情報に従って、Field_puyoを更新する。
+    public void update_Field_puyo(List<GameObject> Puyo_list){
+        this.Field_puyo = new GameObject[Configs.width,Configs.height];
+        foreach(GameObject item in Puyo_list){
+            var pos = Vector3Int.FloorToInt(item.GetComponent<Puyo>().transform.position);
+            this.Field_puyo[pos.x/2-1,pos.y/2-1] = item;
+        }
+    }
+
+    //Field_puyoのindexに従って、Field_boolを更新する。
+    public void update_Field_bool(){
+        for (int x=0;x<Configs.width;++x){
+            for (int y=0;y<Configs.height;++y){
+                if (this.Field_puyo[x,y] != null){
+                    this.Field_bool[2*(x+1),2*(y+1)]     = false;
+                    this.Field_bool[2*(x+1)+1,2*(y+1)]   = false;
+                    this.Field_bool[2*(x+1),2*(y+1)+1]   = false;
+                    this.Field_bool[2*(x+1)+1,2*(y+1)+1] = false;
+                }
+                else{
+                    this.Field_bool[2*(x+1),2*(y+1)]     = true;
+                    this.Field_bool[2*(x+1)+1,2*(y+1)]   = true;
+                    this.Field_bool[2*(x+1),2*(y+1)+1]   = true;
+                    this.Field_bool[2*(x+1)+1,2*(y+1)+1] = true;
+                }
+            }
+        }
+    }
+
+
+    public void colorize_false(){
+        
         for (int x=0;x<Configs.board_width;++x){
             for (int y=0;y<Configs.board_height;++y){
                 if(this.Field_bool[x,y]){
@@ -59,12 +102,5 @@ public class Board : MonoBehaviour
                 }
             }
         }
-
-        //PrefabUtility.SaveAsPrefabAsset(p_Board,"Assets/Prefabs/hoge.prefab");
-
-    }
-
-    public void colorize_Borad(int i,int j){ 
-        this.c_Boards[i,j].GetComponentInChildren<Renderer>().material.SetColor("_Color",Color.red);
     }
 }

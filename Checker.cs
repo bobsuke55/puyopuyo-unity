@@ -5,10 +5,9 @@ using UnityEngine;
 public class Checker : MonoBehaviour
 {
     private GameObject c_Text;
-    private Puyo_pair puyo_Pair;
+    private Puyo_Controller Play_puyo;
     private TextMesh c_Text_component;
     private string tex;
-    private GameObject puyo;
 
     public Checker(){
         init_Field();
@@ -24,23 +23,24 @@ public class Checker : MonoBehaviour
             + "can_ymoving:{1} \n"
             + "can_xrightmoving:{2} \n"
             + "can_xleftmoving:{3} \n"
-            + "lslide_flag:{4} \n"
-            + "rslide_flag:{5} \n"
-            + "uslide_flag:{6} \n"
-            + "unrotate_flag:{7} \n"
-            + "h:{8} "
-            + "v:{9} \n"
-            + "z:{10} \n"
-            + "x:{11} \n"
-            + "xtimeelapsed:{12} \n"
-            + "ytimeelapsed:{13} \n"
-            + "fixtimeelapsed:{14} \n"
-            + "mainpos:{15} \n"
-            + "subpos:{16} \n";
+            + "can_rotating:{4} \n"
+            + "lslide_flag:{5} \n"
+            + "rslide_flag:{6} \n"
+            + "uslide_flag:{7} \n"
+            + "unrotate_flag:{8} \n"
+            + "h:{9} "
+            + "v:{10} \n"
+            + "z:{11} \n"
+            + "x:{12} \n"
+            + "xtimeelapsed:{13} \n"
+            + "ytimeelapsed:{14} \n"
+            + "fixtimeelapsed:{15} \n"
+            + "mainpos:{16} \n"
+            + "subpos:{17} \n";
     }
 
-    public void update_text(Puyo_pair puyo,float hkey,float vkey,bool zkey,bool xkey){
-        c_Text_component.text=string.Format(tex,puyo.angle,puyo.can_ymoving,puyo.can_xrightmoving,puyo.can_xleftmoving,
+    public void update_text(Puyo_Controller puyo,float hkey,float vkey,bool zkey,bool xkey){
+        c_Text_component.text=string.Format(tex,puyo.angle,puyo.can_ymoving,puyo.can_xrightmoving,puyo.can_xleftmoving,puyo.can_rotating,
                                 puyo.lslide_flag,puyo.rslide_flag,puyo.uslide_flag,puyo.unrotate_flag,
                                 hkey,vkey,zkey,xkey,puyo.xtimeElapsed,puyo.ytimeElapsed,puyo.fixtimeElapsed,
                                 puyo.mainpos,puyo.subpos);

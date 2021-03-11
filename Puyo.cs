@@ -4,65 +4,48 @@ using UnityEngine;
 
 public class Puyo : MonoBehaviour
 {
-    private GameObject firstpuyo;
-    private GameObject secondpuyo;
+    public Vector3Int pos;
+    public int fall_starty;
+    public int fall_deltay;
+    public float fall_time;
+    public float puyo_class;
+    public float puyo_color;
+    public bool is_falling = true;
 
-    private float speed = 0.2f;
-
-    //puyoの色(id)
-    private int puyo_id;
-
-    void Start(){
+    //instance
+    public Puyo(){
+        
 
     }
 
-    void Update()
-    {
+    public void set_fall_deltay(int deltay){
+        this.fall_deltay = deltay;
+        this.is_falling = true;
+    }
 
-        float hKey = Input.GetAxis("Horizontal");
-        float vKey = Input.GetAxis("Vertical");
+    public void check_fall(bool[,] Field_bool){
+        this.is_falling = true;
+        this.pos   = Vector3Int.FloorToInt(this.transform.position);
+        this.fall_starty = (int)this.transform.position.y;
+        this.fall_deltay = 0;
+        this.fall_time   = 0;
 
-        //右入力で右向きに動く
-        if(hKey > 0)
-        {
-            this.transform.position += new Vector3(speed, 0, 0);
+        while (Field_bool[this.pos.x,this.pos.y-this.fall_deltay-1]){
+            this.fall_deltay += 1;
         }
-        //左入力で左向きに動く
-        else if(hKey < 0)
-        {
-            this.transform.position += new Vector3(-speed, 0, 0);
+    }
+
+    public void fall_puyo(){
+        this.fall_time += Time.deltaTime;
+        var target_pos = this.fall_starty-this.fall_deltay;
+        var pos = this.transform.position;
+
+        pos.y = Mathf.Lerp(this.fall_starty,target_pos,
+        this.fall_time/(Configs.fall_time*this.fall_deltay) );
+        this.transform.position = pos;
+
+        if (pos.y == target_pos){
+            this.is_falling = false;
         }
-
-        if(vKey > 0)
-        {
-            this.transform.position += new Vector3(0, speed, 0);
-        }
-        //左入力で左向きに動く
-        else if(vKey < 0)
-        {
-            this.transform.position += new Vector3(0, -speed, 0);
-        }
-
-    }
-
-
-    //整数の足し算を行うメソッド
-    public int Add(int a,int b){
-        return a + b;
-    }
- 
-    //整数の引き算を行うメソッド
-    public int Sub(int a,int b){
-        return a - b;
-    }
- 
-    //整数のかけ算を行うメソッド
-    public int Mul(int a,int b){
-        return a * b;
-    }
- 
-    //整数の割り算を行うメソッド
-    public int Div(int a,int b){
-        return a / b;
     }
 }
