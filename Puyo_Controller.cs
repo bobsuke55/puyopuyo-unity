@@ -8,10 +8,8 @@ public class Puyo_Controller : MonoBehaviour
     public GameObject puyo;
     public GameObject mainpuyo;
     public GameObject subpuyo;
-    public Renderer mainpuyo_r;
-    public Renderer subpuyo_r;
-
-    private Vector3 init_pos = new Vector3(6*Configs.scale,11*Configs.scale,0);
+    public Puyo mainpuyo_script;
+    public Puyo subpuyo_script;
     
     //main puyoの移動差分
     public Vector3 delta = new Vector3(0,0,0);
@@ -71,7 +69,7 @@ public class Puyo_Controller : MonoBehaviour
 
     public string state = "move";
 
-    public Puyo_Controller(string num){
+    public Puyo_Controller(string num,Vector3 init_pos){
         this.puyo = new GameObject($"puyo_{num}");
         this.puyo.transform.position = init_pos;
 
@@ -84,11 +82,15 @@ public class Puyo_Controller : MonoBehaviour
         this.mainpuyo.transform.parent = this.puyo.transform;
         this.subpuyo.transform.parent  = this.puyo.transform;
 
-        this.mainpuyo_r = mainpuyo.GetComponentInChildren<Renderer>();
-        this.subpuyo_r = subpuyo.GetComponentInChildren<Renderer>();
+        this.mainpuyo_script = this.mainpuyo.GetComponent<Puyo>();
+        this.subpuyo_script  = this.subpuyo.GetComponent<Puyo>();
 
-        this.mainpuyo_r.material.SetColor("_bcolor",Color.blue);
-        this.subpuyo_r.material.SetColor("_bcolor",Color.red);
+        this.mainpuyo_script.puyo_color = UnityEngine.Random.Range(0,4);
+        this.subpuyo_script.puyo_color  = UnityEngine.Random.Range(0,4);
+
+        this.mainpuyo_script.set_color();
+        this.subpuyo_script.set_color();
+
         return;
     }
 

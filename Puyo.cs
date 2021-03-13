@@ -8,14 +8,14 @@ public class Puyo : MonoBehaviour
     public int fall_starty;
     public int fall_deltay;
     public float fall_time;
-    public float puyo_class;
-    public float puyo_color;
+    public int puyo_color;
     public bool is_falling = true;
 
-    //instance
-    public Puyo(){
-        
+    private Renderer puyo_renderer;
 
+    public Puyo(){
+
+        return;
     }
 
     public void set_fall_deltay(int deltay){
@@ -46,6 +46,22 @@ public class Puyo : MonoBehaviour
 
         if (pos.y == target_pos){
             this.is_falling = false;
+        }
+    }
+
+    public void set_color(){
+        if (this.puyo_color == 0){
+            this.puyo_renderer = this.GetComponentInChildren<Renderer>();
+            this.puyo_renderer.material.SetVector("_bcolor",Configs.one);
+        }else if(this.puyo_color == 1){
+            this.puyo_renderer = this.GetComponentInChildren<Renderer>();
+            this.puyo_renderer.material.SetVector("_bcolor",Configs.two);
+        }else if(this.puyo_color == 2){
+            this.puyo_renderer = this.GetComponentInChildren<Renderer>();
+            this.puyo_renderer.material.SetVector("_bcolor",Configs.three);
+        }else if(this.puyo_color == 3){
+            this.puyo_renderer = this.GetComponentInChildren<Renderer>();
+            this.puyo_renderer.material.SetVector("_bcolor",Configs.four);
         }
     }
 }
