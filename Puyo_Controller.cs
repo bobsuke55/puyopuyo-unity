@@ -46,6 +46,7 @@ public class Puyo_Controller : MonoBehaviour
     public bool can_xrightmoving;
     public bool can_xleftmoving;
     public bool can_rotating;
+    public bool fix_counting;
 
     /*
     rotate_flag //回転。
@@ -85,8 +86,8 @@ public class Puyo_Controller : MonoBehaviour
         this.mainpuyo_script = this.mainpuyo.GetComponent<Puyo>();
         this.subpuyo_script  = this.subpuyo.GetComponent<Puyo>();
 
-        this.mainpuyo_script.puyo_color = UnityEngine.Random.Range(0,4);
-        this.subpuyo_script.puyo_color  = UnityEngine.Random.Range(0,4);
+        this.mainpuyo_script.puyo_color = UnityEngine.Random.Range(0,Configs.color_num);
+        this.subpuyo_script.puyo_color  = UnityEngine.Random.Range(0,Configs.color_num);
 
         this.mainpuyo_script.set_color();
         this.subpuyo_script.set_color();
@@ -97,15 +98,13 @@ public class Puyo_Controller : MonoBehaviour
 
     public void move(bool[,] Field_bool,float vkey, float hkey, bool zkey, bool xkey){  
         
-        this.check_canmoving(Field_bool,hkey,zkey,xkey); 
+        this.check_canmoving(Field_bool,hkey,zkey,xkey);
         this.ytimeElapsed += Time.deltaTime;
         this.xtimeElapsed += Time.deltaTime;
 
         if (this.can_ymoving){
             this.movey(vkey);
-        }
-        else{ //設置処理に入る。
-            this.fixtimeElapsed += Time.deltaTime;
+            this.fixtimeElapsed = 0;
         }
 
         this.check_canmoving(Field_bool,hkey,zkey,xkey);
@@ -126,8 +125,21 @@ public class Puyo_Controller : MonoBehaviour
         this.rotating_slide(zkey,xkey);
         }
 
-        if ( (this.fixtimeElapsed >= Configs.fixtime)&(!this.is_xmoving)&(!this.is_rotating) ) {
-            //this.fix_puyo();
+        this.check_canmoving(Field_bool,hkey,zkey,xkey);
+
+        if (!this.fix_counting){
+            this.fixtimeElapsed += Time.deltaTime;
+        }
+
+        //puyo 設置処理
+        float limit_time;
+        if(vkey < 0){
+            limit_time = Configs.fixtime / Configs.fixspeed;
+        }else{
+            limit_time = Configs.fixtime;
+        }
+
+        if ( (this.fixtimeElapsed >= limit_time )&(!this.is_xmoving)&(!this.is_rotating) ) {
             this.check_fall(Field_bool);
             this.state = "split";
         }
@@ -141,6 +153,10 @@ public class Puyo_Controller : MonoBehaviour
 
         this.can_ymoving      = Field_bool[this.mainpos.x,mainpos.y-1] & Field_bool[this.mainpos.x+1,mainpos.y-1]
                                &Field_bool[this.subpos.x,subpos.y-1]   & Field_bool[this.subpos.x+1,subpos.y-1];
+
+        this.fix_counting      = Field_bool[this.mainpos.x,mainpos.y-1] & Field_bool[this.mainpos.x+1,mainpos.y-1]
+                               &Field_bool[this.subpos.x,subpos.y-1]   & Field_bool[this.subpos.x+1,subpos.y-1];
+
 
         this.can_xleftmoving  = Field_bool[this.mainpos.x-1,this.mainpos.y] & Field_bool[this.mainpos.x-1,this.mainpos.y+1]
                                &Field_bool[this.mainpos.x-2,this.mainpos.y] & Field_bool[this.mainpos.x-2,this.mainpos.y+1]
@@ -176,19 +192,30 @@ public class Puyo_Controller : MonoBehaviour
 
         if (this.is_rotating){
 
+            this.next_subpos   = Vector3Int.FloorToInt( this.puyo.transform.position  + this.next_subdelta);
+
             this.can_ymoving  = this.can_ymoving & 
                                 Field_bool[this.next_mainpos.x,next_mainpos.y-1] & Field_bool[this.next_mainpos.x+1,next_mainpos.y-1]
+                               //&Field_bool[this.next_mainpos.x,next_mainpos.y-2] & Field_bool[this.next_mainpos.x+1,next_mainpos.y-2]
                                &Field_bool[this.next_subpos.x,next_subpos.y-1] &Field_bool[this.next_subpos.x+1,next_subpos.y-1];
+                               //&Field_bool[this.next_subpos.x,next_subpos.y-2] &Field_bool[this.next_subpos.x+1,next_subpos.y-2];
 
             this.can_xleftmoving = this.can_xleftmoving &
                                 Field_bool[this.next_mainpos.x-1,this.next_mainpos.y] & Field_bool[this.next_mainpos.x-1,this.next_mainpos.y+1]
-                               &Field_bool[Mathf.Clamp(this.next_subpos.x-1,0,Configs.board_width-1),this.next_subpos.y]
-                               &Field_bool[Mathf.Clamp(this.next_subpos.x-1,0,Configs.board_width-1),this.next_subpos.y+1];
+                                &Field_bool[this.next_mainpos.x-2,this.next_mainpos.y] & Field_bool[this.next_mainpos.x-2,this.next_mainpos.y+1]
+                                &Field_bool[Mathf.Clamp(this.next_subpos.x-1,0,Configs.board_width-1),this.next_subpos.y]
+                                &Field_bool[Mathf.Clamp(this.next_subpos.x-1,0,Configs.board_width-1),this.next_subpos.y+1]
+                                &Field_bool[Mathf.Clamp(this.next_subpos.x-2,0,Configs.board_width-1),this.next_subpos.y] 
+                                &Field_bool[Mathf.Clamp(this.next_subpos.x-2,0,Configs.board_width-1),this.next_subpos.y+1];
 
             this.can_xrightmoving = this.can_xrightmoving &
                                 Field_bool[this.next_mainpos.x+2,this.next_mainpos.y]&Field_bool[this.next_mainpos.x+2,this.next_mainpos.y+1]
+                               &Field_bool[this.next_mainpos.x+3,this.next_mainpos.y]&Field_bool[this.next_mainpos.x+3,this.next_mainpos.y+1]
                                &Field_bool[Mathf.Clamp(this.next_subpos.x+2,0,Configs.board_width-1),this.next_subpos.y]
-                               &Field_bool[Mathf.Clamp(this.next_subpos.x+2,0,Configs.board_width-1),this.next_subpos.y+1];
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x+2,0,Configs.board_width-1),this.next_subpos.y+1]
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x+3,0,Configs.board_width-1),this.next_subpos.y]
+                               &Field_bool[Mathf.Clamp(this.next_subpos.x+3,0,Configs.board_width-1),this.next_subpos.y+1];
+                    
         }
     }
 
@@ -251,12 +278,12 @@ public class Puyo_Controller : MonoBehaviour
             if (z){
                 this.target_angle = this.angle + 90;
                 this.is_rotating = true;
-                this.ytimeElapsed = 0;
+                //this.ytimeElapsed = 0;
                 }
             else if(x){ //時計回転
                 this.target_angle = this.angle - 90;
                 this.is_rotating = true;
-                this.ytimeElapsed = 0;
+                //this.ytimeElapsed = 0;
                 }
             else{
                 this.is_rotating = false;
@@ -278,7 +305,6 @@ public class Puyo_Controller : MonoBehaviour
 
             this.next_mainpos  = Vector3Int.FloorToInt( this.puyo.transform.position + this.slide_delta );
             this.next_subpos   = Vector3Int.FloorToInt( this.puyo.transform.position + this.slide_delta + this.next_subdelta);
-
         }
         this.puyo.transform.Translate( slide_delta.x,slide_delta.y,0 );
         this.subpuyo.transform.position  = this.mainpuyo.transform.position + this.sub_delta;

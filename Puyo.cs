@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class Puyo : MonoBehaviour
@@ -8,14 +9,44 @@ public class Puyo : MonoBehaviour
     public int fall_starty;
     public int fall_deltay;
     public float fall_time;
+    public float fall_time_elapsed;
+
     public int puyo_color;
     public bool is_falling = true;
+    public int side_flag = 0b0000;
 
     private Renderer puyo_renderer;
 
     public Puyo(){
-
         return;
+    }
+
+    public void reset_sideflag(Vector2Int d){
+        this.side_flag = 0b0000;
+    }
+
+//繋がるぷよをside_flagに保持する。
+    public void set_sideflag(Vector2Int d){
+        if ( d.y == 1 ){ //上
+            this.side_flag = this.side_flag | 0b1000;
+        }
+        else if ( d.y == -1){ //下
+            this.side_flag = this.side_flag | 0b0100;
+        }
+        else if ( d.x == -1){ //左
+            this.side_flag = this.side_flag | 0b0010;
+        }
+        else if ( d.x == 1 ){ //右
+            this.side_flag = this.side_flag | 0b0001;
+        }
+    }
+
+    public void set_image(){
+        this.puyo_renderer.material.SetFloat("_Image_num",this.side_flag);
+    }
+
+    public void set_blinking(){
+        this.puyo_renderer.material.SetFloat("_Blinking_gate",1);
     }
 
     public void set_fall_deltay(int deltay){
@@ -28,25 +59,27 @@ public class Puyo : MonoBehaviour
         this.pos   = Vector3Int.FloorToInt(this.transform.position);
         this.fall_starty = (int)this.transform.position.y;
         this.fall_deltay = 0;
-        this.fall_time   = 0;
+        this.fall_time_elapsed = 0;
 
-        while (Field_bool[this.pos.x,this.pos.y-this.fall_deltay-1]){
-            this.fall_deltay += 1;
+        var y = 0;
+        while ( (this.pos.y - y) > 1 ){
+            this.fall_deltay += System.Convert.ToInt16( Field_bool[pos.x,pos.y-y] );
+            y += 1;
         }
+        this.fall_time = Configs.time_func[this.fall_deltay/2];
     }
 
     public void fall_puyo(){
-        this.fall_time += Time.deltaTime;
         var target_pos = this.fall_starty-this.fall_deltay;
+        this.fall_time_elapsed += Time.deltaTime;
         var pos = this.transform.position;
+        pos.y = Mathf.Lerp(this.fall_starty,target_pos, this.fall_time_elapsed/this.fall_time );
 
-        pos.y = Mathf.Lerp(this.fall_starty,target_pos,
-        this.fall_time/(Configs.fall_time*this.fall_deltay) );
-        this.transform.position = pos;
-
-        if (pos.y == target_pos){
+        if (pos.y <= target_pos){
+            pos.y = target_pos;
             this.is_falling = false;
         }
+        this.transform.position = pos;
     }
 
     public void set_color(){
