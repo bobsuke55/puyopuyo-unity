@@ -1,9 +1,11 @@
 ## Puyo_Controller
 
-1. movey(float vkey) 
- 1. mainpuyoとsubpuyoを-Configs.ymove分(local座標)ずらす 
-  1. aaa
+- `movey(float vkey)`　
+  - mpuyoとspuyoを-Configs.ymove分y方向にずらす.
 
-aaa
 
-- movex()
+- `movex(float vkey)`　
+  - mpuyoとspuyoをConfigs.xmove分x方向にずらす.
+
+- `movex_isxmoving(float vkey)`　
+  - aaa

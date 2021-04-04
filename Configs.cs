@@ -7,13 +7,13 @@ public class Configs
     // 縦移動にかかる時間 
     public static float yspeed = 20.0f; //加速 key入力を入れると　yspeed倍の速さでぷよが落ちる。
     public static float ytime = 2/6f ; // 放置しているとytime秒に一回tmove移動する。
-    public static float ymove = 1f;
+    public static int ymove = 1;
 
     public static float xtime = 0.05f ; //横移動の入力遅延時間。
     public static float xmove = 1f;
-    public static float xmove_count = 2f; 
+    public static float xmove_count = 1f; 
 
-    public static float smove_count = 2f; 
+    public static float smove_count = 1f; 
     public static float fixtime  = 6/6f;
     public static float fixspeed = 10f;// (2/60)
 
@@ -65,5 +65,6 @@ public class Configs
     //public static float[] time_func   = new float[12] { 100,7f/60f,12f/60f,16f/60f,19f/60f,22f/60f,25f/60f,28f/60f,30f/60f,32f/60f,34f/60f,36f/60f };
     public static float[] time_func   = new float[12] { 100,4f/60f,9f/60f,13f/60f,16f/60f,19f/60f,22f/60f,25f/60f,27f/60f,29f/60f,31f/60f,33f/60f };
 
+    //public static float[] time_func   = new float[12] { 100,4f/60f,9f/60f,13f/60f,16f/60f,19f/60f,22f/60f,25f/60f,27f/60f,29f/60f,31f/60f,33f/60f };
 
 }

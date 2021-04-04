@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class Puyo : MonoBehaviour
 {
+    public GameObject puyo;
     public Vector3Int pos;
     public int fall_starty;
     public int fall_deltay;
@@ -17,9 +18,6 @@ public class Puyo : MonoBehaviour
 
     private Renderer puyo_renderer;
 
-    public Puyo(){
-        return;
-    }
 
     public void reset_sideflag(Vector2Int d){
         this.side_flag = 0b0000;
@@ -53,33 +51,36 @@ public class Puyo : MonoBehaviour
         this.fall_deltay = deltay;
         this.is_falling = true;
     }
+    public void set_pos(Vector3Int pos){
+        this.pos = pos;
+    }
 
     public void check_fall(bool[,] Field_bool){
         this.is_falling = true;
-        this.pos   = Vector3Int.FloorToInt(this.transform.position);
-        this.fall_starty = (int)this.transform.position.y;
+        this.fall_starty = this.pos.y;
         this.fall_deltay = 0;
         this.fall_time_elapsed = 0;
 
         var y = 0;
-        while ( (this.pos.y - y) > 1 ){
+        while ( (this.pos.y - y ) >= 2 ){
             this.fall_deltay += System.Convert.ToInt16( Field_bool[pos.x,pos.y-y] );
             y += 1;
         }
+        this.pos.y -= this.fall_deltay;
         this.fall_time = Configs.time_func[this.fall_deltay/2];
     }
 
-    public void fall_puyo(){
+    public void fall_puyo(){ // call after check_fall();
         var target_pos = this.fall_starty-this.fall_deltay;
         this.fall_time_elapsed += Time.deltaTime;
-        var pos = this.transform.position;
-        pos.y = Mathf.Lerp(this.fall_starty,target_pos, this.fall_time_elapsed/this.fall_time );
+        var tpos = this.transform.localPosition;
+        tpos.y = Mathf.Lerp(this.fall_starty,target_pos, this.fall_time_elapsed/this.fall_time );
 
-        if (pos.y <= target_pos){
-            pos.y = target_pos;
+        if (tpos.y <= target_pos){
+            tpos.y = target_pos;
             this.is_falling = false;
         }
-        this.transform.position = pos;
+        this.transform.localPosition = tpos;
     }
 
     public void set_color(){
