@@ -6,8 +6,8 @@ using UnityEngine;
 public class Puyo_Controller : MonoBehaviour
 {       
     //mainpuyoとsubpuyoへの参照。
-    public GameObject mpuyo;
-    public GameObject spuyo;
+    public Puyo mpuyo;
+    public Puyo spuyo;
     public Puyo mpuyo_script;
     public Puyo spuyo_script;
     //puyo移動判定用のポジション。
@@ -40,29 +40,8 @@ public class Puyo_Controller : MonoBehaviour
     public Puyo_Controller(string num, Vector3 init_pos,GameObject p_board){
 
     　　//puyo生成
-        GameObject puyoprefab = (GameObject)Resources.Load ("puyo/puyo") as GameObject;
-        this.mpuyo = Instantiate (puyoprefab,new Vector3(0,0,0) , Quaternion.Euler(0, 0, 0));
-        this.mpuyo.name  = $"mpuyo_{num}";
-        this.spuyo = Instantiate (puyoprefab,new Vector3(0,0,0), Quaternion.Euler(0, 0, 0));
-        this.spuyo.name  = $"spuyo_{num}";
-
-        this.mpuyo.transform.parent  = p_board.transform;
-        this.spuyo.transform.parent  = p_board.transform;
-
-        this.mpuyo.transform.localPosition = init_pos;
-        this.spuyo.transform.localPosition = init_pos+this.s_delta;
-
-        this.mpos = Vector3Int.FloorToInt(init_pos);
-        this.spos = Vector3Int.FloorToInt(init_pos+this.s_delta);
-
-        this.mpuyo_script  = this.mpuyo.GetComponent<Puyo>();
-        this.spuyo_script  = this.spuyo.GetComponent<Puyo>();
-
-        this.mpuyo_script.puyo_color = UnityEngine.Random.Range(0,Configs.color_num);
-        this.spuyo_script.puyo_color  = UnityEngine.Random.Range(0,Configs.color_num);
-
-        this.mpuyo_script.set_color();
-        this.spuyo_script.set_color();
+        this.mpuyo = new Puyo($"mpuyo_{num}",init_pos,p_board);
+        this.spuyo = new Puyo($"mpuyo_{num}",init_pos+this.s_delta,p_board);
 
         return;
     }
@@ -75,8 +54,8 @@ public class Puyo_Controller : MonoBehaviour
         var ymove_timeflag = this.ytime_flag(vkey);
 
         //mainpuyoとsubpuyoの下は動けるか。
-        var ymove_posflag = Field_bool[this.mpos.x,mpos.y-1]  & Field_bool[this.mpos.x+1,mpos.y-1]
-                            &Field_bool[this.spos.x,spos.y-1] & Field_bool[this.spos.x+1,spos.y-1];
+        var ymove_posflag = Field_bool[this.mpuyo.pos.x,mpos.y-1]  & Field_bool[this.mpuyo.pos.x+1,mpos.y-1]
+                            &Field_bool[this.spuyo.pos.x,spos.y-1] & Field_bool[this.spuyo.pos.x+1,spos.y-1];
     
         if (ymove_posflag & ymove_timeflag){
             this.movey();
@@ -84,12 +63,12 @@ public class Puyo_Controller : MonoBehaviour
 
         var xmove_timeflag = this.xtime_flag();
 
-        var xleftmove_posflag  = Field_bool[this.mpos.x-1,this.mpos.y] & Field_bool[this.mpos.x-1,this.mpos.y+1]
-                               &Field_bool[this.spos.x-1,this.spos.y] & Field_bool[this.spos.x-1,this.spos.y+1]
+        var xleftmove_posflag  = Field_bool[this.mpuyo.pos.x-1,this.mpuyo.pos.y] & Field_bool[this.mpuyo.pos.x-1,this.mpuyo.pos.y+1]
+                               &Field_bool[this.spuyo.pos.x-1,this.spuyo.pos.y] & Field_bool[this.spuyo.pos.x-1,this.spuyo.pos.y+1]
                                &(hkey < 0);
 
-        var xrightmove_posflag = Field_bool[this.mpos.x+2,this.mpos.y] & Field_bool[this.mpos.x+2,this.mpos.y+1]
-                               &Field_bool[this.spos.x+2,this.spos.y] & Field_bool[this.spos.x+2,this.spos.y+1]
+        var xrightmove_posflag = Field_bool[this.mpuyo.pos.x+2,this.mpuyo.pos.y] & Field_bool[this.mpuyo.pos.x+2,this.mpuyo.pos.y+1]
+                               &Field_bool[this.spuyo.pos.x+2,this.spuyo.pos.y] & Field_bool[this.spuyo.pos.x+2,this.spuyo.pos.y+1]
                                &(hkey > 0);
 
         if( this.is_xmoving ){ //右移動
@@ -103,12 +82,12 @@ public class Puyo_Controller : MonoBehaviour
         zkey = zkey & (!xkey); // xkeyとzkeyがtrueの場合は、zkeyはfalseになる。
         var angle_plus = this.plus_mod(this.angle,360f);
 
-        bool leftposflag   =  Field_bool[this.mpos.x-1,this.mpos.y] & Field_bool[this.mpos.x-1,this.mpos.y+1]
-                             &Field_bool[this.mpos.x-2,this.mpos.y] & Field_bool[this.mpos.x-2,this.mpos.y+1];
-        bool rightposflag  =  Field_bool[this.mpos.x+2,this.mpos.y] & Field_bool[this.mpos.x+2,this.mpos.y+1]
-                             &Field_bool[this.mpos.x+3,this.mpos.y] & Field_bool[this.mpos.x+3,this.mpos.y+1];
-        bool downposflag   =  Field_bool[this.mpos.x,this.mpos.y-1] & Field_bool[this.mpos.x+1,this.mpos.y-1]
-                             &Field_bool[this.mpos.x,this.mpos.y-2] & Field_bool[this.mpos.x+1,this.mpos.y-2];
+        bool leftposflag   =  Field_bool[this.mpuyo.pos.x-1,this.mpuyo.pos.y] & Field_bool[this.mpuyo.pos.x-1,this.mpuyo.pos.y+1]
+                             &Field_bool[this.mpuyo.pos.x-2,this.mpuyo.pos.y] & Field_bool[this.mpuyo.pos.x-2,this.mpuyo.pos.y+1];
+        bool rightposflag  =  Field_bool[this.mpuyo.pos.x+2,this.mpuyo.pos.y] & Field_bool[this.mpuyo.pos.x+2,this.mpuyo.pos.y+1]
+                             &Field_bool[this.mpuyo.pos.x+3,this.mpuyo.pos.y] & Field_bool[this.mpuyo.pos.x+3,this.mpuyo.pos.y+1];
+        bool downposflag   =  Field_bool[this.mpuyo.pos.x,this.mpuyo.pos.y-1] & Field_bool[this.mpuyo.pos.x+1,this.mpuyo.pos.y-1]
+                             &Field_bool[this.mpuyo.pos.x,this.mpuyo.pos.y-2] & Field_bool[this.mpuyo.pos.x+1,this.mpuyo.pos.y-2];
 
         if (this.is_rotating | this.is_sliding){
             this.rotate_isrotating();
@@ -136,16 +115,16 @@ public class Puyo_Controller : MonoBehaviour
         }
         
         //下が設置している & 横移動していない時 & 回転していない時にカウントする。
-        var mpos_onflag = !(Field_bool[this.mpos.x,mpos.y-1] | Field_bool[this.mpos.x+1,mpos.y-1]);
-        var spos_onflag = !(Field_bool[this.spos.x,spos.y-1] | Field_bool[this.spos.x+1,spos.y-1]);
+        var mpos_onflag = !(Field_bool[this.mpuyo.pos.x,mpos.y-1] | Field_bool[this.mpuyo.pos.x+1,mpos.y-1]);
+        var spos_onflag = !(Field_bool[this.spuyo.pos.x,spos.y-1] | Field_bool[this.spuyo.pos.x+1,spos.y-1]);
         var fix_counting_flag = (mpos_onflag | spos_onflag) 
                                 &!(this.is_xmoving | this.is_rotating | this.is_sliding);
 
         if (fix_counting_flag){ // count 
             var fix_flag = this.fixtime_flag(vkey);
             if(fix_flag){
-                this.mpuyo_script.set_pos(this.mpos);
-                this.spuyo_script.set_pos(this.spos);
+                this.mpuyo_script.set_pos(this.mpuyo.pos);
+                this.spuyo_script.set_pos(this.spuyo.pos);
                 this.state = "split";
             }
         }
@@ -201,8 +180,8 @@ public class Puyo_Controller : MonoBehaviour
         Vector3 next_s_delta = new Vector3(0,0,0);
         next_s_delta.x = 2*Mathf.Round(Mathf.Cos(Mathf.Deg2Rad*this.target_angle)*100)/100;
         next_s_delta.y = 2*Mathf.Round(Mathf.Sin(Mathf.Deg2Rad*this.target_angle)*100)/100;
-        this.spos.x = this.mpos.x + (int)next_s_delta.x;
-        this.spos.y = this.mpos.y + (int)next_s_delta.y;
+        this.spuyo.pos.x = this.mpuyo.pos.x + (int)next_s_delta.x;
+        this.spuyo.pos.y = this.mpuyo.pos.y + (int)next_s_delta.y;
     }
 
     private void rotate_isrotating(){
@@ -233,11 +212,11 @@ public class Puyo_Controller : MonoBehaviour
         this.mpuyo.transform.Translate(this.slide_delta.x,this.slide_delta.y,0);
         this.spuyo.transform.Translate(this.slide_delta.x,this.slide_delta.y,0);
 
-        this.mpos.x += (int)this.slide_delta.x * 2;
-        this.mpos.y += (int)this.slide_delta.y * 2;
+        this.mpuyo.pos.x += (int)this.slide_delta.x * 2;
+        this.mpuyo.pos.y += (int)this.slide_delta.y * 2;
 
-        this.spos.x += (int)this.slide_delta.x * 2;
-        this.spos.y += (int)this.slide_delta.y * 2;
+        this.spuyo.pos.x += (int)this.slide_delta.x * 2;
+        this.spuyo.pos.y += (int)this.slide_delta.y * 2;
     }
 
     private void slide_issliding(){
@@ -250,31 +229,9 @@ public class Puyo_Controller : MonoBehaviour
             this.slide_delta = new Vector3(0,0,0);
         }
     }
-
-    //縦移動
-    private void movey(){
-        this.ytimeElapsed = 0f;
-        float delta_y = -1 * Configs.ymove;
-
-        this.mpuyo.transform.Translate(0,(int)delta_y,0,this.mpuyo.transform.parent);
-        this.spuyo.transform.Translate(0,(int)delta_y,0,this.spuyo.transform.parent);
-
-        this.mpos.y += (int)delta_y;
-        this.spos.y += (int)delta_y;
-    }
     
     //右移動 2フレームかけて動くためにdelta.xに移動方向を格納。
-    private void movex(float hkey){
-        this.delta.x = Mathf.Sign(hkey) * Configs.xmove;
-        this.is_xmoving = true;
 
-        this.mpuyo.transform.Translate((int)this.delta.x,0,0,this.mpuyo.transform.parent);
-        this.spuyo.transform.Translate((int)this.delta.x,0,0,this.spuyo.transform.parent);
-
-        //GameObjectは2フレームかけて2マス移動するが、判定は1フレームで2マス分動かす。
-        this.mpos.x += (int)delta.x * 2;
-        this.spos.x += (int)delta.x * 2;
-    }
 
     private void movex_isxmoving(){
         this.mpuyo.transform.Translate((int)this.delta.x,0,0,this.mpuyo.transform.parent);
@@ -296,8 +253,8 @@ public class Puyo_Controller : MonoBehaviour
         this.mpuyo.transform.localPosition = init_pos;
         this.spuyo.transform.localPosition = init_pos + this.s_delta;
 
-        this.mpos = Vector3Int.FloorToInt(init_pos);
-        this.spos = Vector3Int.FloorToInt(init_pos+this.s_delta);
+        this.mpuyo.pos = Vector3Int.FloorToInt(init_pos);
+        this.spuyo.pos = Vector3Int.FloorToInt(init_pos+this.s_delta);
 
         Debug.Log("fucking");
     }

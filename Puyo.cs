@@ -5,7 +5,10 @@ using UnityEngine;
 
 public class Puyo : MonoBehaviour
 {
+
     public GameObject puyo;
+
+    //配列参照用pos. Gameobjectと同じように動かす。
     public Vector3Int pos;
     public int fall_starty;
     public int fall_deltay;
@@ -18,6 +21,36 @@ public class Puyo : MonoBehaviour
 
     private Renderer puyo_renderer;
 
+    public Puyo(string name, Vector3 init_pos,GameObject p_board){
+     
+    　　//puyo生成
+        GameObject puyoprefab = (GameObject)Resources.Load ("puyo/puyo") as GameObject;
+        this.puyo = Instantiate (puyoprefab,new Vector3(0,0,0) , Quaternion.Euler(0, 0, 0));
+        this.puyo.name  = name;
+        
+        this.puyo.transform.parent  = p_board.transform;
+        this.puyo.transform.localPosition = init_pos;
+        this.pos = Vector3Int.FloorToInt(init_pos);
+        this.puyo_color = UnityEngine.Random.Range(0,Configs.color_num);
+
+    }
+    public void movey(){
+        float delta_y = -1 * Configs.ymove;
+        this.puyo.transform.Translate(0,(int)delta_y,0,this.puyo.transform.parent);
+        this.pos.y += (int)delta_y;
+    }
+
+    private void movex(float hkey){
+        this.delta.x = Mathf.Sign(hkey) * Configs.xmove;
+        this.is_xmoving = true;
+
+        this.mpuyo.transform.Translate((int)this.delta.x,0,0,this.mpuyo.transform.parent);
+        this.spuyo.transform.Translate((int)this.delta.x,0,0,this.spuyo.transform.parent);
+
+        //GameObjectは2フレームかけて2マス移動するが、判定は1フレームで2マス分動かす。
+        this.mpuyo.pos.x += (int)delta.x * 2;
+        this.spuyo.pos.x += (int)delta.x * 2;
+    }
 
     public void reset_sideflag(Vector2Int d){
         this.side_flag = 0b0000;
