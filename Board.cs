@@ -12,26 +12,21 @@ public class Board : MonoBehaviour
     public GameObject p_board;
 
     public bool[,] field_bool = new bool[Configs.board_width,Configs.board_height];
-    public GameObject[,] field_puyo = new GameObject[Configs.width,Configs.height];
+    public Puyo[,] field_puyo = new Puyo[Configs.width,Configs.height];
+    public Puyo_Controller[] next_puyos = new Puyo_Controller[Configs.next_num+1];
 
     private GameObject[,]   c_boards = new GameObject[Configs.board_width,Configs.board_height];
     private Renderer[,]     c_boards_r = new Renderer[Configs.board_width,Configs.board_height];
-    public List<Vector2Int> chainind_list = new List<Vector2Int>();
 
     public bool is_falling = false;
     public bool is_erasing = false;
     public int  sum_deltas = 0;
-    public int erase_chain_num = 0;
-    public int erase_color = 0;
 
-    public List<int> erase_link_list;
-    public List<int> erase_color_list = new List<int>();
-    public List<List<Vector2Int>> erase_ind_lists = new List<List<Vector2Int>>();
-    public List<Vector2Int> checked_puyo_lists = new List<Vector2Int>();
+    public List<EraseInfo> eraseinfo_list;
 
     public Board(){
-        init_Field();
-        return;
+        this.init_Field();
+        this.InitializePuyo();
     }
 
     public void init_Field(){ 
@@ -72,38 +67,31 @@ public class Board : MonoBehaviour
         }
 
 
-        this.colorize_false();
+        this.ColorizeFalse();
         //PrefabUtility.SaveAsPrefabAsset(p_board,"Assets/Prefabs/hoge.prefab");
 
     }
 
-    public void colorize_board(int i,int j){ 
-        this.c_boards[i,j].GetComponentInChildren<Renderer>().material.SetColor("_Color",Color.red);
-    }
 
-    public void set_field_bool(GameObject puyo){
-        var pos = Vector3Int.FloorToInt( puyo.GetComponent<Puyo>().pos );
+
+    //puyoをfield_puyo上に設置する。
+    public void SetFieldPuyo(Puyo puyo){
+        var pos = puyo.Pos;
+        this.field_puyo[pos.x/2-1,pos.y/2-1] = puyo;
+
         this.field_bool[pos.x,pos.y]     = false;
         this.field_bool[pos.x+1,pos.y]   = false;
         this.field_bool[pos.x,pos.y+1]   = false;
         this.field_bool[pos.x+1,pos.y+1] = false;
-
-    }
-
-    //puyoをfield_puyo上に設置する。
-    public void set_field_puyo(GameObject puyo){
-        var pos = Vector3Int.FloorToInt(puyo.GetComponent<Puyo>().pos);
-        this.field_puyo[pos.x/2-1,pos.y/2-1] = puyo;
     }
 
 
     //puyoの位置を参照して、width 欠ける heightの1マスにpuyoへの参照をおく。
-    //field_puyo上のindexと実際のぷよの位置が異なる場合、field_puyo上に再配置。fall()のあととか。
-    public void update_field_puyo(){
+    public void UpdateFieldPuyo(){
         for (int x=0;x<Configs.width;++x){
-            for (int y=0;y<Configs.height;++y){            
-                if (this.field_puyo[x,y] != null){
-                    Vector2Int pos = (Vector2Int)this.field_puyo[x,y].GetComponent<Puyo>().pos;
+            for (int y=0;y<Configs.height;++y){
+                if ( this.field_puyo[x,y] is object ){
+                    Vector2Int pos = (Vector2Int)this.field_puyo[x,y].Pos;
                     var ind = new Vector2Int(pos.x/2-1,pos.y/2-1);
                     if ( (ind.x != x) | (ind.y != y) ){ 
                         this.field_puyo[ind.x,ind.y] = this.field_puyo[x,y];
@@ -114,12 +102,41 @@ public class Board : MonoBehaviour
         }
     }
 
+    public void InitializePuyo(){ 
+        for (int x=0;x<Configs.next_num;++x){ 
+            this.next_puyos[x] = new Puyo_Controller(Configs.next_pos[x+1],this.p_board);
+        }
+    }
 
-    //field_puyoのindexに従って、field_boolを更新する。
-    public void update_field_bool(){
+    public void CreateNextPuyo(){ 
+        this.next_puyos[Configs.next_num] = new Puyo_Controller( Configs.next_pos[Configs.next_num+1],this.p_board );
+    }
+
+    public void MoveNextPuyos(float t){
+        Vector3 startpos;
+        Vector3 endpos;
+        Vector3 nextpos;
+
+        for (int x=0;x<Configs.next_num+1;++x){ // 0,1,2
+            startpos = Configs.next_pos[x+1];
+            endpos   = Configs.next_pos[x];
+            nextpos  = Vector3.Lerp(startpos,endpos,t);
+            next_puyos[x].MoveNext(nextpos);
+        }
+    }
+
+    public Puyo_Controller CreatePuyo(){
+        var playpuyo = this.next_puyos[0];
+        for (int x=0;x<Configs.next_num;++x){ 
+            this.next_puyos[x] = this.next_puyos[x+1];
+        }
+        return playpuyo;
+    }
+
+    public void UpdateFieldBool(){
         for (int x=0;x<Configs.width;++x){
             for (int y=0;y<Configs.height;++y){
-                if (this.field_puyo[x,y] != null){
+                if ( this.field_puyo[x,y] is object ){
                     this.field_bool[2*(x+1),2*(y+1)]     = false;
                     this.field_bool[2*(x+1)+1,2*(y+1)]   = false;
                     this.field_bool[2*(x+1),2*(y+1)+1]   = false;
@@ -136,39 +153,37 @@ public class Board : MonoBehaviour
     }
 
 
-    public void check_fall_puyos(){
-        this.is_falling = true;
-        this.sum_deltas = 0;
+    public void CheckFallPuyos(){
+        this.is_falling = false;
 
         for (int x=0;x<Configs.width;++x){
             for (int y=0;y<Configs.height;++y){
-                if (this.field_puyo[x,y] != null){
-                    this.field_puyo[x,y].GetComponent<Puyo>().check_fall(this.field_bool);
-                    this.sum_deltas +=this.field_puyo[x,y].GetComponent<Puyo>().fall_deltay;
+                if (this.field_puyo[x,y] is object){
+                    this.field_puyo[x,y].CheckFall(this.field_bool);
+                    this.sum_deltas +=this.field_puyo[x,y].fall_deltay;
                 }
             }
         }
+        this.is_falling = (this.sum_deltas > 0);;
     }
 
-    public void fall_puyos(){
+    public void FallPuyos(){
         var bool_list = new List<bool>();
-
         for (int x=0;x<Configs.width;++x){
             for (int y=0;y<Configs.height;++y){
-                if (this.field_puyo[x,y] != null){
-                    this.field_puyo[x,y].GetComponent<Puyo>().fall_puyo();
-                    bool_list.Add(this.field_puyo[x,y].GetComponent<Puyo>().is_falling);
+                if (this.field_puyo[x,y] is object){
+                    this.field_puyo[x,y].FallPuyo();
+                    bool_list.Add(this.field_puyo[x,y].is_falling);
                 }
             }
         }
-
         if( bool_list.All(i => i == false ) ){
             this.is_falling = false;
         }
     }
 
 
-    public void colorize_false(){
+    public void ColorizeFalse(){
         for (int x=0;x<Configs.board_width;++x){
             for (int y=0;y<Configs.board_height;++y){
                 if(this.field_bool[x,y]){
@@ -185,75 +200,66 @@ public class Board : MonoBehaviour
         this.c_boards_r[2*(2+1)+1,(12)*2+1].material.SetColor("_Color",Color.red);
     }
 
+    public struct EraseInfo{
+        public int color;
+        public List<Vector2Int> chainlist;
 
-    public void colorize_field_puyo(){
-        for (int x=0;x<Configs.width;++x){
-            for (int y=0;y<Configs.height;++y){
-                UnityEngine.Color color = Color.black;
-                if(this.field_puyo[x,y] != null){
-                    var cls = this.field_puyo[x,y].GetComponent<Puyo>().puyo_color;
-                    if (cls == 0){
-                        color = Color.red;
-                    }else if(cls == 1){
-                        color = Color.green;
-                    }else if(cls == 2){
-                        color = Color.blue;
-                    }else if(cls == 3){
-                        color = Color.yellow;
-                    }
-                }
-            this.c_boards_r[2*(x+1),2*(y+1)].material.SetColor("_Color",color);
-            this.c_boards_r[2*(x+1)+1,2*(y+1)].material.SetColor("_Color",color);
-            this.c_boards_r[2*(x+1),2*(y+1)+1].material.SetColor("_Color",color);
-            this.c_boards_r[2*(x+1)+1,2*(y+1)+1].material.SetColor("_Color",color);
+        public EraseInfo(int color,List<Vector2Int> chainlist){
+            this.color = color;
+            this.chainlist = chainlist;
+        }
+    }
+
+
+    //puyoを消す & animationはどこ?
+    public void ErasePuyos(){
+        foreach(EraseInfo eraseinfo in this.eraseinfo_list){
+            foreach(Vector2Int vec in eraseinfo.chainlist){
+                this.field_puyo[vec.x,vec.y].DestroyPuyo();
+                Destroy( this.field_puyo[vec.x,vec.y] );
+                this.field_puyo[vec.x,vec.y] = null;
             }
         }
     }
-    
 
-    public void check_erasepuyos(){ //listに従ってメモリから消せばいいのかな。
+    public void CheckErasePuyos(){
         this.is_erasing = false;
-
-        this.erase_color_list = new List<int>();
-        this.erase_link_list  = new List<int>();
-        this.erase_ind_lists  = new List<List<Vector2Int>>();
-        this.checked_puyo_lists = new List<Vector2Int>();
-
+        var checked_cnainlist  = new List<Vector2Int>();
+        var eraseinfo = new EraseInfo();
+        this.eraseinfo_list = new List<EraseInfo>();
+ 
         for (int x=0;x<Configs.width;++x){
             for (int y=0;y<Configs.height;++y){
-                this.chainind_list  = new List<Vector2Int>();
-
-                if(this.field_puyo[x,y] != null){
-                    this.check_chainpuyo(new Vector2Int(x,y)); //
-                    this.field_puyo[x,y].GetComponent<Puyo>().set_image();
-                }
-                //Confings.erase_num以上繋がっている。
-                if(this.chainind_list.Count >= Configs.erase_num ){
-                    this.is_erasing = true;
-                    this.erase_ind_lists.Add(this.chainind_list);
-
-                    foreach(Vector2Int vec in this.chainind_list){
-                        this.field_puyo[vec.x,vec.y].GetComponent<Puyo>().set_blinking();
+                var chainlist  = new List<Vector2Int>();
+                var pos = new Vector2Int(x,y);
+                if( this.field_puyo[x,y] is Object ){
+                    if(!checked_cnainlist.Contains(pos)){
+                        var erase_color = this.field_puyo[x,y].puyo_color;
+                        chainlist = this.CheckChainPuyo(chainlist,pos);
+                        checked_cnainlist.AddRange(chainlist);
+                        eraseinfo = new EraseInfo(erase_color,chainlist);
                     }
-                    if ( !this.erase_color_list.Contains( this.erase_color ) ){
-                        this.erase_color_list.Add(this.erase_color);
+                }
+                if(chainlist.Count >= Configs.erase_num ){
+                    this.is_erasing = true;
+                    this.eraseinfo_list.Add(eraseinfo);
+
+                    foreach(Vector2Int vec in chainlist){
+                        this.field_puyo[vec.x,vec.y].SetBlinking();
                     }
                 }
             }
         }
     }
 
-    //
-    private void check_chainpuyo(Vector2Int pos){
+    private List<Vector2Int> CheckChainPuyo(List<Vector2Int> chainlist,Vector2Int pos){
         Vector2Int[] direction = new Vector2Int[4] {
         new Vector2Int(0,1),new Vector2Int(1,0),new Vector2Int(0,-1),new Vector2Int(-1,0)};
 
-        //既に含まれていたら終わり。
-        if ( this.chainind_list.Contains( pos ) | this.checked_puyo_lists.Contains( pos ) ){
-            return;
+        if ( chainlist.Contains( pos ) ){
+            return chainlist;
         }
-        this.chainind_list.Add( pos );
-        this.checked_puyo_lists.Add( pos );
+        chainlist.Add( pos );
 
         foreach(var d in direction){
             //はみ出る
@@ -261,55 +267,35 @@ public class Board : MonoBehaviour
                 continue;
             }
             //ぷよがない
-            if(this.field_puyo[pos.x+d.x,pos.y+d.y] == null){
+            if(this.field_puyo[pos.x+d.x,pos.y+d.y] is null){
                 continue;
             }
             //色が異なる
-            this.erase_color  = this.field_puyo[pos.x,pos.y].GetComponent<Puyo>().puyo_color;
-            var ncolor = this.field_puyo[pos.x+d.x,pos.y+d.y].GetComponent<Puyo>().puyo_color;
+            var color  = this.field_puyo[pos.x,pos.y].puyo_color;
+            var adjcolor = this.field_puyo[pos.x+d.x,pos.y+d.y].puyo_color;
 
-            if (this.erase_color != ncolor ){
+            if (color != adjcolor ){
                 continue;
             }
-            this.field_puyo[pos.x,pos.y].GetComponent<Puyo>().set_sideflag(d);
-            this.field_puyo[pos.x+d.x,pos.y+d.y].GetComponent<Puyo>().set_sideflag(-d);
-            this.check_chainpuyo(pos+d);
+            this.field_puyo[pos.x,pos.y].SetAdj(d);
+            this.field_puyo[pos.x+d.x,pos.y+d.y].SetAdj(-d);
+            chainlist = this.CheckChainPuyo(chainlist,pos+d);
         }
+        return chainlist;
     }
 
 
-    //puyoを消す & animationはどこ?
-    public void erase_puyos(){
-        this.erase_chain_num += 1;　//連鎖数を足す。
-        foreach(List<Vector2Int> erase_puyos in this.erase_ind_lists){
-            foreach(Vector2Int vec in erase_puyos){
-                Destroy( this.field_puyo[vec.x,vec.y] );
-                this.field_puyo[vec.x,vec.y] = null;
-            }
-        }
-    }
-
-    public void set_puyo_images(){
+    public void SetPuyoImages(){
         for (int x=0;x<Configs.width;++x){
             for (int y=0;y<Configs.height;++y){
-                this.field_puyo[x,y].GetComponent<Puyo>().set_image();
+                if(this.field_puyo[x,y] is object){
+                    this.field_puyo[x,y].SetImage();
+                }
             }
         }
     }
-
-/*
-                if(this.chainind_list.Count >= Configs.erase_num ){
-                    this.is_erasing = true;
-
-                    this.erase_link_list.Add( this.chainind_list.Count );
-                    if ( !this.erase_color_list.Contains( this.erase_color ) ){
-                        this.erase_color_list.Add(this.erase_color);
-                    }
-                    foreach(Vector2Int vec in this.chainind_list){
-                        Destroy( this.field_puyo[vec.x,vec.y] );
-                        this.field_puyo[vec.x,vec.y] = null;
-                    }
-                }
-*/
-
+    
+    public void colorize_board(int i,int j){ 
+        this.c_boards[i,j].GetComponentInChildren<Renderer>().material.SetColor("_Color",Color.red);
+    }
 }

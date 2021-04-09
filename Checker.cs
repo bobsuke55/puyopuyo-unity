@@ -36,6 +36,6 @@ public class Checker : MonoBehaviour
 
     public void update_text(Puyo_Controller puyo,float hkey,float vkey,bool zkey,bool xkey){
         c_Text_component.text=string.Format(tex,puyo.angle,hkey,vkey,zkey,xkey,puyo.s_delta,puyo.ytimeElapsed,puyo.fixtimeElapsed,
-                                           puyo.mpos,puyo.spos,puyo.is_rotating,puyo.is_sliding,puyo.is_xmoving);
+                                           puyo.mpuyo.Pos,puyo.spuyo.Pos,puyo.is_rotating,puyo.is_sliding,puyo.is_xmoving);
     }
 }

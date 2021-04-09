@@ -3,32 +3,46 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Configs
-{   
+{
+
+    public static int next_num = 2;
+    public static Vector3[] next_pos = new Vector3[4] {new Vector3(17,27,0),new Vector3(17,23,0),new Vector3(17,19,0),new Vector3(17,15,0)};
+    public static Vector3 init_pos = new Vector3(6,24,0);
+    public static float next_time = 10/60f;
+
+    //global座標におけるpuyo_imageのサイズ.
+    public static int puyo_width  = 2;
+    public static int puyo_height = 2;
+
+    //ぷよ移動用配列。
+    public static int grid_num = 2;
+    public static int height = 14;
+    public static int width = 6;
+    public static int height_out = 2;
+    public static int width_out = 2;
+    public static int board_height = grid_num*(height+height_out);
+    public static int board_width =  grid_num*(width+width_out);
+
+    public static float create_time = 6/60f;
+
     // 縦移動にかかる時間 
     public static float yspeed = 20.0f; //加速 key入力を入れると　yspeed倍の速さでぷよが落ちる。
-    public static float ytime = 2/6f ; // 放置しているとytime秒に一回tmove移動する。
-    public static int ymove = 1;
+    public static float ytime = 2/6f;  
 
-    public static float xtime = 0.05f ; //横移動の入力遅延時間。
-    public static float xmove = 1f;
-    public static float xmove_count = 1f; 
+    public static float ymove_count = 2;
+    public static float ymove_amount = puyo_height/ymove_count;
 
+    //xmove_count回xmove分移動すれば1マス移動したことになる。
+    public static float xmove_count = 2;
+    public static float xmove_amount = puyo_width/xmove_count;
+    public static float xmove_inputdelay = 0.05f ; //横移動の入力遅延時間。
+
+    //width 
     public static float smove_count = 1f; 
     public static float fixtime  = 6/6f;
     public static float fixspeed = 10f;// (2/60)
 
-    public static float xspeed = 10.0f;
-    public static float rspeed = 10*90f;
-
-    public static float create_time = 6/60f;
-
-    //上下両端
-    public static int height = 14;
-    public static int width = 6;
-
-    public static int board_height = 2*(height+2);
-    public static int board_width =  2*(width+2);
-
+    public static float rotate_speed = 10*90f;
     public static float fall_time = 0.05f;
 
     public static Vector4 one = new Vector4(255,0,0,0);
@@ -37,10 +51,6 @@ public class Configs
     public static Vector4 four = new Vector4(255,255,0,0);
 
     public static int random_seed = 0;
-
-    public static Vector3 init_pos     = new Vector3(6,26,0);
-    public static Vector3 next_pos     = new Vector3(18,26,0);
-    public static Vector3 nextnext_pos = new Vector3(18,22,0);
 
     //繋がる
     public static int color_num = 4;
